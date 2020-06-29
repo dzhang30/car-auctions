@@ -28,8 +28,9 @@ class CarAuctionsTransformer:
         return self.main_df
 
     def get_transformed_year_series(self) -> pd.Series:
-        # get years from the description_url column first
-        years = pd.to_numeric(self._description_urls_components.str[0], errors='coerce', downcast='integer')
+        # get years from the description_url column (it should be the first component of the url)
+        first_component_from_urls: pd.Series = self._description_urls_components.str[0]
+        years = pd.to_numeric(first_component_from_urls, errors='coerce', downcast='integer')
         invalid_yrs_bool_idx = np.logical_or.reduce([years.isnull(), years < 1900, years > 2039])
 
         # try to get the remaining missing years from the description_name column
@@ -37,21 +38,21 @@ class CarAuctionsTransformer:
         matched_yrs = self.main_df.loc[invalid_yrs_bool_idx, 'description_name'].str.extract(year_regex, expand=False)
 
         years[invalid_yrs_bool_idx] = matched_yrs
-        years_int = years.fillna(0).astype('int')
-        years_int.loc[years_int == 0] = ''
+        years = years.fillna(0).astype('int')
+        years.loc[years == 0] = ''
 
-        return years_int
+        return years
 
     def get_transformed_make_series(self) -> pd.Series:
-        # get makes from the description_url column first
+        # get makes from the description_url column
         makes = self._description_urls_components.apply(lambda row: self._filter_by_known_makes(row))
         missing_makes_bool_idx = makes.isnull()
 
         # try to get the remaining missing makes from the description_name column
         matched_makes = self.main_df.loc[missing_makes_bool_idx].apply(
             lambda row: self._filter_by_known_makes(row['description_name'].split(' ')), axis=1)
-
         makes[missing_makes_bool_idx] = matched_makes
+
         return makes
 
     def get_transformed_model_series(self) -> pd.Series:
