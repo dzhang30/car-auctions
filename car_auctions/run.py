@@ -124,7 +124,6 @@ def _filter_by_known_makes(column_val: Optional[List], models_by_makes: Dict[str
 
 
 def _filter_by_known_models(row: pd.Series, models_by_makes: Dict[str, Set]) -> Optional[str]:
-    # description_name = _strip_description_name(row)
     description_name = row['description_name']
     description_name_list = description_name.split()
     desciption_name_substrings = utils.create_substrings_from_list_of_strings(description_name_list)
@@ -137,23 +136,6 @@ def _filter_by_known_models(row: pd.Series, models_by_makes: Dict[str, Set]) -> 
                 return potential_model_substring
 
     return pd.NA
-
-
-def _strip_description_name(row):
-    description_name = row['description_name']
-    year = str(row['year'])
-    make = str(row['make'])
-
-    description_name = re.sub(year, '', description_name)
-    description_name = re.sub(make, '', description_name, flags=re.IGNORECASE)
-
-    description_name = re.sub(r'no (?:reserve: |reseve: )', '', description_name, flags=re.IGNORECASE)
-    description_name = re.sub(r'(?:[0-9k,]+)-mile', '', description_name, flags=re.IGNORECASE)
-    description_name = re.sub(r' {2,}', ' ', description_name)
-
-    description_name = description_name.strip()
-
-    return description_name
 
 
 @utils.timer
