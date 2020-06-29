@@ -11,6 +11,11 @@ cd path/to/car_auctions/repo
 pyenv local car_auctions
 ```
 
+Setup the project requirements
+```
+pip install requirements.txt
+``` 
+
 Update the `car_auctions.cfg` file to specify the absolute paths of the csv files you want to perform the ETL on. 
 The `data_files` and `out_files` directories in this repo are the default I/O directories for this project  
 ```
