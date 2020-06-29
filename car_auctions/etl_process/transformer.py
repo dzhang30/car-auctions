@@ -73,12 +73,6 @@ class CarAuctionsTransformer:
 
         return cleaned_mileage
 
-    def _extract_description_url_components(self) -> pd.Series:
-        url = self.main_df['description_url'].str.extract('https://bringatrailer.com/listing/(.+)/$', expand=False)
-        url_components = url.str.split('-', expand=False)
-
-        return url_components
-
     def _filter_by_known_makes(self, row: Optional[List]) -> Optional[str]:
         if isinstance(row, list):
             row_val_without_nums = [row_part for row_part in row if not row_part.isnumeric()]
