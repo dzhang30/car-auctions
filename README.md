@@ -22,8 +22,8 @@ The `data_files` and `out_files` directories in this repo are the default I/O di
 # Default settings:
 [extractor_settings]
 main_car_auctions_csv_fp = bring_a_trailer.csv
-comprehensive_makes_csv_fp = car_makes.csv
-makes_and_models_csv_fp = car_models.csv
+comprehensive_makes_csv_fp = comprehensive_makes.csv
+makes_and_models_csv_fp = makes_and_models.csv
 
 [loader_settings]
 output_transformed_csv_fp = transformed_car_auctions.csv
