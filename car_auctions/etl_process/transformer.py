@@ -69,7 +69,8 @@ class CarAuctionsTransformer:
         return no_reserve
 
     def get_transformed_mileage_series(self) -> pd.Series:
-        og_mileage = self.main_df['description_name'].str.extract(r'([0-9k,]+)-mile', expand=False, flags=re.IGNORECASE)
+        mileage_regex = r'([0-9k,]+)-mile'
+        og_mileage = self.main_df['description_name'].str.extract(mileage_regex, expand=False, flags=re.IGNORECASE)
         cleaned_mileage = og_mileage.str.replace(',', '').str.replace('k', '000')
 
         return cleaned_mileage

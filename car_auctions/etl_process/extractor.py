@@ -46,8 +46,9 @@ class CarAuctionsExtractor:
     @staticmethod
     def _extract_alphanum_df_from_csv(csv_file_path: str) -> pd.DataFrame:
         df = utils.read_csv_to_lower_cased_df(csv_file_path)
+        non_alphanum_and_blank_space_regex = r'[\W] *'
         for col in df.columns:
             df[f'original_{col}'] = df[col]
-            df[col] = df[col].str.replace(r'[\W] *', '')
+            df[col] = df[col].str.replace(non_alphanum_and_blank_space_regex, '')
 
         return df
