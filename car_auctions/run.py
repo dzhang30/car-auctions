@@ -1,7 +1,7 @@
 from car_auctions import utils
-from car_auctions.extractor import CarAuctionsExtractor
-from car_auctions.loader import DataLoader
-from car_auctions.transformer import CarAuctionsTransformer
+from car_auctions.etl_process.extractor import CarAuctionsExtractor
+from car_auctions.etl_process.loader import DataLoader
+from car_auctions.etl_process.transformer import CarAuctionsTransformer
 
 
 @utils.timer
