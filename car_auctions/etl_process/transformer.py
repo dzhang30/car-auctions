@@ -16,7 +16,7 @@ class CarAuctionsTransformer:
     def __post_init__(self):
         base_description_url_regex = 'https://bringatrailer.com/listing/(.+)/$'
         description_urls = self.main_df['description_url'].str.extract(base_description_url_regex, expand=False)
-        self._description_urls_components = description_urls.str.split('-', expand=False)
+        self._description_urls_components: pd.Series = description_urls.str.split('-', expand=False)
 
     def transform_car_auction_dataframe(self) -> pd.DataFrame:
         self.main_df['year'] = self.get_transformed_year_series()
@@ -29,7 +29,7 @@ class CarAuctionsTransformer:
 
     def get_transformed_year_series(self) -> pd.Series:
         # get years from the description_url column (it should be the first component of the url)
-        first_component_from_urls: pd.Series = self._description_urls_components.str[0]
+        first_component_from_urls = self._description_urls_components.str[0]
         years = pd.to_numeric(first_component_from_urls, errors='coerce', downcast='integer')
         invalid_yrs_bool_idx = np.logical_or.reduce([years.isnull(), years < 1900, years > 2039])
 
