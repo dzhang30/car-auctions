@@ -54,7 +54,7 @@ class CarAuctionsTransformer:
         makes[missing_makes_bool_idx] = matched_makes
         return makes
 
-    def get_transformed_model_series(self, ) -> pd.Series:
+    def get_transformed_model_series(self) -> pd.Series:
         self.main_df['description_name'] = self.main_df['description_name'].str.replace('-', ' ')
         models = self.main_df.apply(lambda row: self._filter_by_known_models(row), axis=1)
 
