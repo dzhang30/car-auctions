@@ -1,117 +1,17 @@
-import re
-from typing import Dict, List, Optional
-
-import numpy as np
-import pandas as pd
-
 from car_auctions import utils
-from car_auctions.extractor import DataExtractor
-
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.width', 500)
-pd.set_option('display.max_colwidth', 100)
-
-
-def transform_car_auction_dataframe(main_df: pd.DataFrame, models_by_make: Dict[str, Dict]) -> pd.DataFrame:
-    url = main_df['description_url'].str.extract('https://bringatrailer.com/listing/(.+)/$', expand=False)
-    url_components = url.str.split('-', expand=False)
-
-    main_df['year'] = extract_year_series(url_components, main_df)
-    main_df['make'] = extract_make_series(url_components, main_df, models_by_make)
-    main_df['model'] = extract_model_series(main_df, models_by_make)  # *run this after extracting both Year and Make*
-    main_df['no reserve'] = extract_no_reserve_series(main_df)
-    main_df['mileage'] = extract_mileage_series(main_df)
-
-    return main_df
-
-
-def extract_mileage_series(main_df: pd.DataFrame) -> pd.Series:
-    original_mileage = main_df['description_name'].str.extract(r'([0-9k,]+)-mile', expand=False, flags=re.IGNORECASE)
-    cleaned_mileage = original_mileage.str.replace(',', '').str.replace('k', '000')
-
-    return cleaned_mileage
-
-
-def extract_year_series(url_components: pd.Series, main_df: pd.DataFrame) -> pd.Series:
-    # get years from the description_url column first
-    years = pd.to_numeric(url_components.str[0], errors='coerce', downcast='integer')
-    invalid_years_bool_idx = np.logical_or.reduce([years.isnull(), years < 1900, years > 2039])
-
-    # try to get the remaining missing years from the description_name column
-    valid_year_regex = r'(?:^|\D)(?P<Year>19[0-9]{1}[0-9]{1}|20[0-3]{1}[0-9]{1})(?:$|\D)'
-    matched_years = main_df.loc[invalid_years_bool_idx, 'description_name'].str.extract(valid_year_regex, expand=False)
-
-    years[invalid_years_bool_idx] = matched_years
-    years_int = years.fillna(0).astype('int')
-    years_int.loc[years_int == 0] = ''
-
-    return years_int
-
-
-def extract_make_series(url_components: pd.Series, main_df: pd.DataFrame, models_by_make: Dict[str, Dict]) -> pd.Series:
-    # get makes from the description_url column first
-    makes = url_components.apply(lambda row: _filter_by_known_makes(row, models_by_make))
-    missing_makes_bool_idx = makes.isnull()
-
-    # try to get the remaining missing makes from the description_name column
-    matched_makes = main_df.loc[missing_makes_bool_idx].apply(
-        lambda row: _filter_by_known_makes(row['description_name'].split(' '), models_by_make), axis=1)
-
-    makes[missing_makes_bool_idx] = matched_makes
-    return makes
-
-
-def extract_no_reserve_series(main_df: pd.DataFrame) -> pd.Series:
-    no_reserve = main_df['description_name'].str.extract(r'(no reserve|reseve):', expand=False, flags=re.IGNORECASE)
-    no_reserve.replace(['no reserve', 'no reseve', np.NaN], ['yes', 'yes', 'no'], inplace=True)
-
-    return no_reserve
-
-
-def extract_model_series(main_df: pd.DataFrame, models_by_make: Dict[str, Dict]) -> pd.Series:
-    main_df['description_name'] = main_df['description_name'].str.replace('-', ' ')
-    models = main_df.apply(lambda row: _filter_by_known_models(row, models_by_make), axis=1)
-
-    return models
-
-
-def _filter_by_known_makes(column_val: Optional[List], models_by_make: Dict[str, Dict]) -> Optional[str]:
-    if isinstance(column_val, list):
-        column_val_without_nums = [col_part for col_part in column_val if not col_part.isnumeric()]
-        column_substrings = utils.create_substrings_from_list_of_strings(column_val_without_nums)
-
-        for col_substring in column_substrings:
-            if col_substring in models_by_make:
-                return col_substring
-
-    return pd.NA
-
-
-def _filter_by_known_models(row: pd.Series, models_by_make: Dict[str, Dict]) -> Optional[str]:
-    description_name = row['description_name']
-    description_name_list = description_name.split()
-    desciption_name_substrings = utils.create_substrings_from_list_of_strings(description_name_list)
-
-    make = row['make']
-    make_models = models_by_make.get(make)
-    if make_models:
-        for potential_model_substring in desciption_name_substrings:
-            if potential_model_substring in make_models:
-                return make_models[potential_model_substring]
-
-    return pd.NA
+from car_auctions.extractor import CarAuctionsExtractor
+from car_auctions.loader import DataLoader
+from car_auctions.transformer import CarAuctionsTransformer
 
 
 @utils.timer
-def main():
-    data_extractor = DataExtractor('../data_files/car_makes.csv', '../data_files/car_models.csv')
-    models_by_makes = data_extractor.models_by_makes
-    car_auctions_df = utils.read_csv_to_lower_cased_df('../data_files/bring_a_trailer.csv')
-    car_auction_data = transform_car_auction_dataframe(car_auctions_df, models_by_makes)
+def run_car_auctions_etl(main_car_auctions_fp: str, comprehensive_makes_fp: str, makes_and_models_fp: str,
+                         output_fp: str) -> None:
+    data_extractor = CarAuctionsExtractor(main_car_auctions_fp, comprehensive_makes_fp, makes_and_models_fp)
+    models_by_makes_reference = data_extractor.get_models_by_makes()
+    extracted_car_auctions_df = data_extractor.get_main_car_auctions_df()
 
-    return car_auction_data
+    data_transformer = CarAuctionsTransformer(extracted_car_auctions_df, models_by_makes_reference)
+    transformed_car_auctions_data = data_transformer.transform_car_auction_dataframe()
 
-
-if __name__ == '__main__':
-    main()
+    DataLoader.load_transformed_dataframe_to_csv(output_fp, transformed_car_auctions_data)

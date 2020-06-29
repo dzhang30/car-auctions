@@ -1,12 +1,13 @@
 import functools
 import os
 import time
-from typing import List
+from configparser import ConfigParser
+from typing import List, Any
 
 import pandas as pd
 
 
-def timer(func):
+def timer(func: Any) -> Any:
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
         tic = time.perf_counter()
@@ -19,9 +20,37 @@ def timer(func):
     return wrapper_timer
 
 
+def read_config_file(config_path: str) -> ConfigParser:
+    """
+    Read the config file (.ini, .cfg, or similar format)
+
+    :param config_path: path to the config file
+    :param logger: logger for forensics
+    :return: a ConfigParser object that contains the sections of the config file
+    """
+    config = ConfigParser()
+    file_read = config.read(config_path)
+
+    if not file_read:
+        err_msg = 'Could not open/read the config file: {0}'.format(config_path)
+        raise OSError(err_msg)
+
+    return config
+
+
+def add_default_dir_path(file_path: str, default_directory_path: str):
+    if not os.path.dirname(file_path):
+        return os.path.join(default_directory_path, file_path)
+
+
 def validate_file_path(file_path: str) -> None:
     if not os.path.isfile(file_path):
-        raise FileNotFoundError(f'The csv file_path {file_path} does not exist')
+        raise FileNotFoundError(f'The file path {file_path} does not exist')
+
+
+def validate_dir_path(dir_path: str) -> None:
+    if not os.path.isdir(dir_path):
+        raise FileNotFoundError(f'The directory path {dir_path} does not exist')
 
 
 def read_csv_to_lower_cased_df(csv_file_path: str) -> pd.DataFrame:
