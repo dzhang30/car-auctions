@@ -13,7 +13,7 @@ def timer(func):
         value = func(*args, **kwargs)
         toc = time.perf_counter()
         elapsed_time = toc - tic
-        print(f"Elapsed time: {elapsed_time:0.4f} seconds")
+        print(f'Elapsed time for {func.__name__}: {elapsed_time:0.4f} seconds')
         return value
 
     return wrapper_timer
@@ -24,12 +24,11 @@ def validate_file_path(file_path: str) -> None:
         raise FileNotFoundError(f'The csv file_path {file_path} does not exist')
 
 
-def read_csv_to_lower_case(csv_file_path: str) -> pd.DataFrame:
+def read_csv_to_lower_cased_df(csv_file_path: str) -> pd.DataFrame:
     validate_file_path(csv_file_path)
 
     csv_df = pd.read_csv(csv_file_path)
     csv_df.columns = [column_name.lower() for column_name in csv_df.columns]
-    # csv_df = csv_df.apply(lambda x: x.astype(str).str.lower())
     csv_df = csv_df.applymap(lambda s: s.lower() if type(s) == str else s)
 
     return csv_df
