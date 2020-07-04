@@ -69,10 +69,18 @@ class CarAuctionsTransformer:
         return no_reserve
 
     def get_transformed_mileage_series(self) -> pd.Series:
-        mileage_regex = r'([0-9k,]+)-mile'
-        og_mileage = self.main_df['description_name'].str.extract(mileage_regex, expand=False, flags=re.IGNORECASE)
-        cleaned_mileage = og_mileage.str.replace(',', '').str.replace('k', '000')
+        mileage_regex = r'([0-9k,]+)[ -]+(?:indicated[ -]+)*mile[s]*'
+        mileage_result = None
+        mileage_cols = ['description_name', 'description_bat_essentials_3_name', 'description_bat_essentials_4_name']
+        for col_name in mileage_cols:
+            if mileage_result is not None:
+                prev_missing_mileage_bool_idx = mileage_result.isnull()
+                next_mileage_col = self.main_df[col_name].str.extract(mileage_regex, expand=False, flags=re.IGNORECASE)
+                mileage_result[prev_missing_mileage_bool_idx] = next_mileage_col[prev_missing_mileage_bool_idx]
+            else:
+                mileage_result = self.main_df[col_name].str.extract(mileage_regex, expand=False, flags=re.IGNORECASE)
 
+        cleaned_mileage = mileage_result.str.replace(',', '').str.replace('k', '000')
         return cleaned_mileage
 
     def _filter_by_known_makes(self, row: Optional[List]) -> Optional[str]:
